@@ -39,17 +39,23 @@ describe('Client', () => {
 
     (grpc.loadPackageDefinition as jest.Mock) = mockLoadPackageDefinition;
     (protoLoader.loadSync as jest.Mock).mockReturnValue({});
+    (grpc.Metadata as unknown as jest.Mock) = jest.fn().mockImplementation(() => ({
+      set: jest.fn(),
+    }));
 
     client = new Client('localhost:50051');
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    delete process.env.MIRROR_NEURON_GRPC_AUTH_TOKEN;
+    delete process.env.MIRROR_NEURON_GRPC_TIMEOUT_SECONDS;
+    delete process.env.MIRROR_NEURON_GRPC_TARGET;
   });
 
   describe('submitJob', () => {
     it('should submit a job and return job_id', async () => {
-      mockJobStub.SubmitJob.mockImplementation((req: any, callback: any) => {
+      mockJobStub.SubmitJob.mockImplementation((_req: any, _options: any, callback: any) => {
         callback(null, { job_id: 'test-job-id', status: 'PENDING' });
       });
 
@@ -63,12 +69,13 @@ describe('Client', () => {
           manifest_json: '{"manifest": true}',
           payloads: { 'test.py': Buffer.from('print("hello")') },
         },
+        expect.objectContaining({ deadline: expect.any(Date) }),
         expect.any(Function)
       );
     });
 
     it('should handle errors from SubmitJob', async () => {
-      mockJobStub.SubmitJob.mockImplementation((req: any, callback: any) => {
+      mockJobStub.SubmitJob.mockImplementation((_req: any, _options: any, callback: any) => {
         callback(new Error('Submit Error'));
       });
 
@@ -80,7 +87,7 @@ describe('Client', () => {
 
   describe('getJob', () => {
     it('should get job and return job_json', async () => {
-      mockJobStub.GetJob.mockImplementation((req: any, callback: any) => {
+      mockJobStub.GetJob.mockImplementation((_req: any, _options: any, callback: any) => {
         callback(null, { job_json: '{"id": "test-job-id"}' });
       });
 
@@ -89,8 +96,31 @@ describe('Client', () => {
       expect(result).toBe('{"id": "test-job-id"}');
       expect(mockJobStub.GetJob).toHaveBeenCalledWith(
         { job_id: 'test-job-id' },
+        expect.objectContaining({ deadline: expect.any(Date) }),
         expect.any(Function)
       );
     });
+  });
+
+  it('uses MIRROR_NEURON env config for auth and timeout', async () => {
+    process.env.MIRROR_NEURON_GRPC_AUTH_TOKEN = 'secret';
+    process.env.MIRROR_NEURON_GRPC_TIMEOUT_SECONDS = 'none';
+    const metadata = { set: jest.fn() };
+    (grpc.Metadata as unknown as jest.Mock).mockReturnValue(metadata);
+    client = new Client();
+
+    mockJobStub.ListJobs.mockImplementation((_req: any, _metadata: any, _options: any, callback: any) => {
+      callback(null, { jobs_json: '{"data":[]}' });
+    });
+
+    await client.listJobs();
+
+    expect(metadata.set).toHaveBeenCalledWith('authorization', 'Bearer secret');
+    expect(mockJobStub.ListJobs).toHaveBeenCalledWith(
+      { limit: 0, include_terminal: true },
+      metadata,
+      {},
+      expect.any(Function)
+    );
   });
 });
