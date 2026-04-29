@@ -13,14 +13,13 @@ export class Client {
   private clusterStub: any;
   private observabilityStub: any;
   private metadata: grpc.Metadata | undefined;
-  private callOptions: grpc.CallOptions;
+  private timeoutSeconds: number | null;
 
   constructor(targetOrOptions: string | ClientOptions = {}) {
     const options = typeof targetOrOptions === 'string' ? { target: targetOrOptions } : targetOrOptions;
     const target = options.target || process.env.MIRROR_NEURON_GRPC_TARGET || 'localhost:50051';
-    const timeoutSeconds = resolveTimeout(options.timeoutSeconds);
+    this.timeoutSeconds = resolveTimeout(options.timeoutSeconds);
     this.metadata = resolveMetadata(options.authToken);
-    this.callOptions = timeoutSeconds === null ? {} : { deadline: new Date(Date.now() + timeoutSeconds * 1000) };
 
     const protoOptions = {
       keepCase: true,
@@ -133,9 +132,10 @@ export class Client {
   }
 
   public async *streamEvents(jobId: string): AsyncGenerator<string, void, unknown> {
+    const callOptions = this.callOptions();
     const call = this.metadata
-      ? this.observabilityStub.StreamEvents({ job_id: jobId }, this.metadata, this.callOptions)
-      : this.observabilityStub.StreamEvents({ job_id: jobId }, this.callOptions);
+      ? this.observabilityStub.StreamEvents({ job_id: jobId }, this.metadata, callOptions)
+      : this.observabilityStub.StreamEvents({ job_id: jobId }, callOptions);
 
     for await (const chunk of call) {
       yield chunk.event_json;
@@ -143,11 +143,18 @@ export class Client {
   }
 
   private callUnary(stub: any, method: string, request: any, callback: (err: any, response: any) => void) {
+    const callOptions = this.callOptions();
     if (this.metadata) {
-      stub[method](request, this.metadata, this.callOptions, callback);
+      stub[method](request, this.metadata, callOptions, callback);
     } else {
-      stub[method](request, this.callOptions, callback);
+      stub[method](request, callOptions, callback);
     }
+  }
+
+  private callOptions(): grpc.CallOptions {
+    return this.timeoutSeconds === null
+      ? {}
+      : { deadline: new Date(Date.now() + this.timeoutSeconds * 1000) };
   }
 }
 

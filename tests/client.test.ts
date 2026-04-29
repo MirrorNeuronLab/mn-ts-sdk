@@ -123,4 +123,24 @@ describe('Client', () => {
       expect.any(Function)
     );
   });
+
+  it('recomputes deadlines for each call', async () => {
+    const nowSpy = jest.spyOn(Date, 'now');
+    nowSpy.mockReturnValueOnce(1_000).mockReturnValueOnce(4_000);
+    client = new Client({ target: 'localhost:50051', timeoutSeconds: 10 });
+
+    mockJobStub.GetJob.mockImplementation((_req: any, _options: any, callback: any) => {
+      callback(null, { job_json: '{}' });
+    });
+
+    await client.getJob('first');
+    await client.getJob('second');
+
+    const firstOptions = mockJobStub.GetJob.mock.calls[0][1];
+    const secondOptions = mockJobStub.GetJob.mock.calls[1][1];
+    expect(firstOptions.deadline.getTime()).toBe(11_000);
+    expect(secondOptions.deadline.getTime()).toBe(14_000);
+
+    nowSpy.mockRestore();
+  });
 });
