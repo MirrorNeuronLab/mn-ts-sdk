@@ -1,4 +1,4 @@
-# Mirror Neuron TypeScript SDK
+# Mirror Neuron TypeScript SDK (Depreciated, please use Python SDK)
 
 This is the TypeScript SDK for Mirror Neuron, providing analogous functionality to the Python SDK.
 
