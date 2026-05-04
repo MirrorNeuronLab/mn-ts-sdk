@@ -17,7 +17,7 @@ export class Client {
 
   constructor(targetOrOptions: string | ClientOptions = {}) {
     const options = typeof targetOrOptions === 'string' ? { target: targetOrOptions } : targetOrOptions;
-    const target = options.target || process.env.MIRROR_NEURON_GRPC_TARGET || 'localhost:50051';
+    const target = options.target || process.env.MN_GRPC_TARGET || 'localhost:50051';
     this.timeoutSeconds = resolveTimeout(options.timeoutSeconds);
     this.metadata = resolveMetadata(options.authToken);
 
@@ -163,20 +163,20 @@ function resolveTimeout(value?: number | null): number | null {
     return value;
   }
 
-  const raw = process.env.MIRROR_NEURON_GRPC_TIMEOUT_SECONDS || '10';
+  const raw = process.env.MN_GRPC_TIMEOUT_SECONDS || '10';
   if (['', '0', 'none'].includes(raw.toLowerCase())) {
     return null;
   }
 
   const parsed = Number(raw);
   if (Number.isNaN(parsed)) {
-    throw new Error('MIRROR_NEURON_GRPC_TIMEOUT_SECONDS must be a number, 0, or none');
+    throw new Error('MN_GRPC_TIMEOUT_SECONDS must be a number, 0, or none');
   }
   return parsed;
 }
 
 function resolveMetadata(authToken?: string): grpc.Metadata | undefined {
-  const token = authToken || process.env.MIRROR_NEURON_GRPC_AUTH_TOKEN || '';
+  const token = authToken || process.env.MN_GRPC_AUTH_TOKEN || '';
   if (!token) {
     return undefined;
   }

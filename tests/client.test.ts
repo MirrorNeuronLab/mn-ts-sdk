@@ -48,9 +48,9 @@ describe('Client', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
-    delete process.env.MIRROR_NEURON_GRPC_AUTH_TOKEN;
-    delete process.env.MIRROR_NEURON_GRPC_TIMEOUT_SECONDS;
-    delete process.env.MIRROR_NEURON_GRPC_TARGET;
+    delete process.env.MN_GRPC_AUTH_TOKEN;
+    delete process.env.MN_GRPC_TIMEOUT_SECONDS;
+    delete process.env.MN_GRPC_TARGET;
   });
 
   describe('submitJob', () => {
@@ -102,9 +102,9 @@ describe('Client', () => {
     });
   });
 
-  it('uses MIRROR_NEURON env config for auth and timeout', async () => {
-    process.env.MIRROR_NEURON_GRPC_AUTH_TOKEN = 'secret';
-    process.env.MIRROR_NEURON_GRPC_TIMEOUT_SECONDS = 'none';
+  it('uses MN env config for auth and timeout', async () => {
+    process.env.MN_GRPC_AUTH_TOKEN = 'secret';
+    process.env.MN_GRPC_TIMEOUT_SECONDS = 'none';
     const metadata = { set: jest.fn() };
     (grpc.Metadata as unknown as jest.Mock).mockReturnValue(metadata);
     client = new Client();

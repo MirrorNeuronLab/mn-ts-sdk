@@ -41,9 +41,9 @@ async function main() {
 The SDK is separately installable and uses the core gRPC interface only.
 Env vars override constructor defaults:
 
-- `MIRROR_NEURON_GRPC_TARGET`: default target.
-- `MIRROR_NEURON_GRPC_TIMEOUT_SECONDS`: per-call deadline; `0` or `none` disables it.
-- `MIRROR_NEURON_GRPC_AUTH_TOKEN`: optional bearer metadata.
+- `MN_GRPC_TARGET`: default target.
+- `MN_GRPC_TIMEOUT_SECONDS`: per-call deadline; `0` or `none` disables it.
+- `MN_GRPC_AUTH_TOKEN`: optional bearer metadata.
 
 ### Decorators
 
